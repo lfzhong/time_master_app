@@ -4,6 +4,9 @@ import { saveToStorage, loadFromStorage } from '../utils/storage';
 import { getCurrentTimestamp } from '../utils/time';
 import { generateId } from '../utils/helpers';
 import { TimeTrackerContext } from '../context/TimeTrackerContext';
+import { saveTask, loadTasks } from '../services/firestore';
+
+const USER_ID = 'test-users';
 
 type Action =
   | { type: 'LOAD_STATE'; payload: AppState }
@@ -45,6 +48,8 @@ const timeTrackerReducer = (state: AppState, action: Action): AppState => {
         createdAt: getCurrentTimestamp(),
         order: newOrder,
       };
+      // Fire-and-forget write to Firestore
+      void saveTask(USER_ID, newTask);
       return {
         ...state,
         tasks: [...state.tasks, newTask],
@@ -168,12 +173,23 @@ const timeTrackerReducer = (state: AppState, action: Action): AppState => {
 export const TimeTrackerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(timeTrackerReducer, initialState);
 
-  // Load data from localStorage on mount
+  // Load data from Firestore on mount (fallback to localStorage)
   useEffect(() => {
-    const savedState = loadFromStorage();
-    if (savedState) {
-      dispatch({ type: 'LOAD_STATE', payload: savedState });
-    }
+    let mounted = true;
+    (async () => {
+      try {
+        const tasks = await loadTasks(USER_ID);
+        if (!mounted) return;
+        const mapped = (tasks as unknown as Task[]) || [];
+        dispatch({ type: 'LOAD_STATE', payload: { ...initialState, tasks: mapped, sortMode: 'custom' } });
+      } catch {
+        const savedState = loadFromStorage();
+        if (savedState && mounted) {
+          dispatch({ type: 'LOAD_STATE', payload: savedState });
+        }
+      }
+    })();
+    return () => { mounted = false; };
   }, []);
 
   // Save to localStorage whenever state changes
