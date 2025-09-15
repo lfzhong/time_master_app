@@ -46,37 +46,73 @@ const TasksPage: React.FC = () => {
   }, [state.tasks, sortBy, freezeSort]);
 
   return (
-    <div className="max-w-4xl mx-auto p-4 md:p-6">
-      <div className="flex items-center justify-between mb-4 md:mb-6">
-        {/* Removed page heading for cleaner header */}
-        <div className="flex-1" />
-        <div className="relative" ref={dropdownRef}>
-          <div className="flex items-center gap-2">
-            <span className="text-gray-500 text-sm">Sort by</span>
+    <div className="w-full">
+      {/* Desktop Layout */}
+      <div className="hidden lg:block">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex-1" />
+          <div className="relative" ref={dropdownRef}>
+            <div className="flex items-center gap-3">
+              <span className="text-gray-600 text-base font-medium">Sort by</span>
+              <button
+                type="button"
+                onClick={() => setOpen(v => !v)}
+                className="px-4 py-2 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-700 hover:text-gray-900 text-base inline-flex items-center gap-2 border border-gray-200"
+                aria-haspopup="menu"
+                aria-expanded={open}
+              >
+                <span className="capitalize">{sortBy}</span>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+            </div>
+            {open && (
+              <div className="absolute right-0 mt-2 w-40 rounded-lg shadow-lg bg-white ring-1 ring-black/10 border border-gray-200">
+                <div className="py-2">
+                  <button className="block w-full text-left px-4 py-2 text-base text-gray-700 hover:bg-gray-50 transition-colors" onClick={() => { setSortBy('custom'); setOpen(false); }}>Custom</button>
+                  <button className="block w-full text-left px-4 py-2 text-base text-gray-700 hover:bg-gray-50 transition-colors" onClick={() => { setSortBy('date'); setOpen(false); }}>Date</button>
+                  <button className="block w-full text-left px-4 py-2 text-base text-gray-700 hover:bg-gray-50 transition-colors" onClick={() => { setSortBy('priority'); setOpen(false); }}>Priority</button>
+                  <button className="block w-full text-left px-4 py-2 text-base text-gray-700 hover:bg-gray-50 transition-colors" onClick={() => { setSortBy('category'); setOpen(false); }}>Category</button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Layout */}
+      <div className="lg:hidden">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-semibold text-gray-900">Tasks</h1>
+          <div className="relative" ref={dropdownRef}>
             <button
               type="button"
               onClick={() => setOpen(v => !v)}
-              className="px-3 py-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-600 hover:text-gray-900 text-sm inline-flex items-center gap-2"
+              className="px-4 py-3 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-700 text-base inline-flex items-center gap-2 border border-gray-200"
               aria-haspopup="menu"
               aria-expanded={open}
             >
               <span className="capitalize">{sortBy}</span>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
             </button>
-          </div>
-          {open && (
-            <div className="absolute right-0 mt-2 w-36 rounded-md shadow-lg bg-white ring-1 ring-black/5">
-              <div className="py-1">
-                <button className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onClick={() => { setSortBy('custom'); setOpen(false); }}>Custom</button>
-                <button className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onClick={() => { setSortBy('date'); setOpen(false); }}>Date</button>
-                <button className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onClick={() => { setSortBy('priority'); setOpen(false); }}>Priority</button>
-                <button className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onClick={() => { setSortBy('category'); setOpen(false); }}>Category</button>
+            {open && (
+              <div className="absolute right-0 mt-2 w-36 rounded-lg shadow-lg bg-white ring-1 ring-black/10 border border-gray-200 z-10">
+                <div className="py-2">
+                  <button className="block w-full text-left px-4 py-3 text-base text-gray-700 hover:bg-gray-50 transition-colors" onClick={() => { setSortBy('custom'); setOpen(false); }}>Custom</button>
+                  <button className="block w-full text-left px-4 py-3 text-base text-gray-700 hover:bg-gray-50 transition-colors" onClick={() => { setSortBy('date'); setOpen(false); }}>Date</button>
+                  <button className="block w-full text-left px-4 py-3 text-base text-gray-700 hover:bg-gray-50 transition-colors" onClick={() => { setSortBy('priority'); setOpen(false); }}>Priority</button>
+                  <button className="block w-full text-left px-4 py-3 text-base text-gray-700 hover:bg-gray-50 transition-colors" onClick={() => { setSortBy('category'); setOpen(false); }}>Category</button>
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
       
-      <div className="space-y-6">
+      <div className="w-full">
         <TaskList tasks={sortedTasks} freezeSort={freezeSort} setFreezeSort={setFreezeSort} />
       </div>
     </div>

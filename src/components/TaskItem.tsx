@@ -78,9 +78,14 @@ const TaskItem: React.FC<TaskItemProps> = ({
   const [showCategoryMenu, setShowCategoryMenu] = useState(false);
   const [newCategory, setNewCategory] = useState("");
   const [addingCategory, setAddingCategory] = useState(false);
+  
+  // title editing states
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editedTitle, setEditedTitle] = useState(task.title);
 
   const priorityMenuRef = useRef<HTMLDivElement>(null);
   const categoryMenuRef = useRef<HTMLDivElement>(null);
+  const titleInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const onDocMouseDown = (e: MouseEvent) => {
@@ -104,6 +109,13 @@ const TaskItem: React.FC<TaskItemProps> = ({
     return () => document.removeEventListener("mousedown", onDocMouseDown);
   }, [showPriorityMenu, showCategoryMenu]);
 
+  // Update edited title when task title changes externally
+  useEffect(() => {
+    if (!isEditingTitle) {
+      setEditedTitle(task.title);
+    }
+  }, [task.title, isEditingTitle]);
+
   const changePriority = (p: NonNullable<Task["priority"]>) => {
     updateTask(task.id, { priority: p });
     setShowPriorityMenu(false);
@@ -120,6 +132,40 @@ const TaskItem: React.FC<TaskItemProps> = ({
     const trimmed = newCategory.trim();
     if (!trimmed) return;
     changeCategory(trimmed);
+  };
+
+  // Title editing functions
+  const startEditingTitle = () => {
+    setIsEditingTitle(true);
+    setEditedTitle(task.title);
+    // Focus the input after the state update
+    setTimeout(() => {
+      titleInputRef.current?.focus();
+      titleInputRef.current?.select();
+    }, 0);
+  };
+
+  const cancelEditingTitle = () => {
+    setIsEditingTitle(false);
+    setEditedTitle(task.title);
+  };
+
+  const saveTitle = () => {
+    const trimmed = editedTitle.trim();
+    if (trimmed && trimmed !== task.title) {
+      updateTask(task.id, { title: trimmed });
+    }
+    setIsEditingTitle(false);
+  };
+
+  const handleTitleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      saveTitle();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      cancelEditingTitle();
+    }
   };
 
   // Date handling: native input, isolated per task
@@ -148,12 +194,12 @@ const TaskItem: React.FC<TaskItemProps> = ({
 
   return (
     <div
-      className={`group relative p-4 rounded-lg border border-gray-100 hover:bg-gray-50 transition flex flex-col gap-2 ${
+      className={`group relative p-4 lg:p-4 rounded-lg border border-gray-100 hover:bg-gray-50 transition flex flex-col gap-3 ${
         task.isActive ? "bg-blue-50/30" : ""
       }`}
     >
       {/* First row: title + priority */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3">
         {/* Drag handle icon */}
         <span
           className="inline-flex items-center justify-center w-4 h-4 text-gray-400 cursor-grab active:cursor-grabbing"
@@ -171,18 +217,18 @@ const TaskItem: React.FC<TaskItemProps> = ({
           type="checkbox"
           checked={!!task.isCompleted}
           onChange={() => onToggleComplete(task.id)}
-          className="w-4 h-4"
+          className="w-5 h-5 lg:w-4 lg:h-4"
         />
 
         {/* Priority menu */}
         <div className="relative" ref={priorityMenuRef}>
           <button
             type="button"
-            className="w-5 h-5 inline-flex items-center justify-center rounded-full hover:ring-2 hover:ring-gray-200"
+            className="w-6 h-6 lg:w-5 lg:h-5 inline-flex items-center justify-center rounded-full hover:ring-2 hover:ring-gray-200"
             onClick={() => setShowPriorityMenu((v) => !v)}
           >
             <span
-              className={`w-3 h-3 rounded-full inline-block ${circleBgColor(
+              className={`w-4 h-4 lg:w-3 lg:h-3 rounded-full inline-block ${circleBgColor(
                 task.priority
               )} ${task.isCompleted ? "opacity-50" : ""}`}
             />
@@ -215,20 +261,39 @@ const TaskItem: React.FC<TaskItemProps> = ({
           )}
         </div>
 
-        <span
-          className={`truncate font-medium ${
-            task.isCompleted
-              ? "line-through text-gray-400 opacity-70"
-              : "text-gray-900"
-          }`}
-        >
-          {task.title}
-        </span>
+        {isEditingTitle ? (
+          <input
+            ref={titleInputRef}
+            type="text"
+            value={editedTitle}
+            onChange={(e) => setEditedTitle(e.target.value)}
+            onKeyDown={handleTitleKeyDown}
+            onBlur={saveTitle}
+            className={`flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-300 font-medium text-base ${
+              task.isCompleted
+                ? "line-through text-gray-400 opacity-70"
+                : "text-gray-900"
+            }`}
+            placeholder="Task title"
+          />
+        ) : (
+          <span
+            className={`truncate font-medium cursor-pointer hover:bg-gray-100 px-3 py-2 rounded text-base ${
+              task.isCompleted
+                ? "line-through text-gray-400 opacity-70"
+                : "text-gray-900"
+            }`}
+            onClick={startEditingTitle}
+            title="Click to edit title"
+          >
+            {task.title}
+          </span>
+        )}
       </div>
 
       {/* Second row: metadata + actions */}
-      <div className="flex items-center justify-between text-sm text-gray-500">
-        <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between text-base text-gray-500">
+        <div className="flex items-center gap-4">
           {/* Date: native hidden input + trigger */}
           <input
             ref={dateInputRef}
@@ -242,7 +307,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
             <button
               type="button"
               onClick={openDatePicker}
-              className="text-sm text-gray-500 hover:text-gray-700"
+              className="text-base text-gray-500 hover:text-gray-700"
               title="Change date"
               aria-label="Change date"
             >
@@ -252,7 +317,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
             <button
               type="button"
               onClick={openDatePicker}
-              className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 text-sm hover:bg-gray-200 flex items-center gap-1"
+              className="px-3 py-1.5 rounded-full bg-gray-100 text-gray-600 text-base hover:bg-gray-200 flex items-center gap-2"
               title="Set date"
               aria-label="Set date"
             >
@@ -262,7 +327,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
                 viewBox="0 0 24 24"
                 strokeWidth="2"
                 stroke="currentColor"
-                className="w-4 h-4 text-gray-500"
+                className="w-5 h-5 text-gray-500"
               >
                 <path
                   strokeLinecap="round"
@@ -278,7 +343,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
           <div className="relative" ref={categoryMenuRef}>
             <button
               type="button"
-              className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 text-xs hover:bg-gray-200"
+              className="px-3 py-1.5 rounded-full bg-gray-100 text-gray-600 text-sm hover:bg-gray-200"
               onClick={() => setShowCategoryMenu((v) => !v)}
             >
               {task.category || "None"}
@@ -347,14 +412,14 @@ const TaskItem: React.FC<TaskItemProps> = ({
         </div>
 
         {/* Right side: timer + actions */}
-        <div className="flex items-center gap-2">
-          <span className="font-mono text-xs text-gray-500">
+        <div className="flex items-center gap-3">
+          <span className="font-mono text-sm text-gray-500">
             {formatTimeHHMMSS(task.totalTime)}
           </span>
           <button
             onClick={task.isActive ? onStop : () => onStart(task.id)}
             aria-label={task.isActive ? "Stop" : "Start"}
-            className={`w-8 h-8 inline-flex items-center justify-center rounded-full text-white transition ${
+            className={`w-10 h-10 lg:w-8 lg:h-8 inline-flex items-center justify-center rounded-full text-white transition ${
               task.isActive
                 ? "bg-red-500 hover:bg-red-600"
                 : "bg-green-500 hover:bg-green-600"
@@ -365,7 +430,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
           <button
             onClick={() => onDelete(task.id)}
             aria-label="Delete"
-            className="inline-flex items-center justify-center p-1 rounded text-gray-400 hover:text-red-500 hover:bg-gray-100 transition"
+            className="inline-flex items-center justify-center p-2 rounded text-gray-400 hover:text-red-500 hover:bg-gray-100 transition"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -373,7 +438,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
               viewBox="0 0 24 24"
               strokeWidth="2"
               stroke="currentColor"
-              className="w-5 h-5"
+              className="w-6 h-6"
             >
               <path
                 strokeLinecap="round"

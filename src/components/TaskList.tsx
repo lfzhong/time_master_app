@@ -143,53 +143,54 @@ const TaskList: React.FC<{ tasks?: Task[]; freezeSort?: boolean; setFreezeSort?:
   const handleUpdateDate = (taskId: string, value: string | undefined) => { updateTask(taskId, { dueDate: value }); };
 
   return (
-    <div className="w-full max-w-2xl mx-auto">
-      <div className="bg-white rounded-lg shadow-md border border-gray-200">
-        <div className="px-4 py-3 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">Master Your Day. Master Your Life.</h2>
+    <div className="w-full">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 lg:shadow-md">
+        <div className="px-4 py-3 border-b border-gray-200 lg:px-6 lg:py-4">
+          <h2 className="text-base lg:text-lg font-semibold text-gray-900">Master Your Day. Master Your Life.</h2>
         </div>
 
         {/* Hybrid creator */}
-        <div className="p-3 md:p-4 border-b border-gray-100">
+        <div className="p-4 lg:p-6 border-b border-gray-100">
           {/* Top row: title + add + expand */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3 lg:gap-3">
             <input
               type="text"
               value={newTitle}
               onChange={(e) => setNewTitle(e.target.value)}
               onKeyDown={onKeyDownTitle}
               placeholder="Add a new task…"
-              className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 placeholder:text-gray-400"
+              className="flex-1 px-4 py-3 lg:px-4 lg:py-2.5 text-base lg:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 placeholder:text-gray-400"
             />
             <button
               type="button"
               onClick={handleCreate}
-              className="inline-flex items-center justify-center px-4 py-2.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="inline-flex items-center justify-center px-4 py-3 lg:px-4 lg:py-2.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-base lg:text-base font-medium"
               title="Add task"
               aria-label="Add task"
             >
-              +
+              <span className="lg:hidden">+</span>
+              <span className="hidden lg:inline">Add Task</span>
             </button>
             <button
               type="button"
               onClick={() => setExpanded(v => !v)}
-              className="w-9 h-9 inline-flex items-center justify-center rounded-lg border border-gray-300 text-gray-400 hover:text-gray-600 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-300 transition"
+              className="w-10 h-10 lg:w-9 lg:h-9 inline-flex items-center justify-center rounded-lg border border-gray-300 text-gray-400 hover:text-gray-600 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-300 transition"
               title={expanded ? 'Hide options' : 'Show options'}
               aria-label={expanded ? 'Hide options' : 'Show options'}
             >
-              …
+              <span className="text-sm lg:text-base">…</span>
             </button>
           </div>
 
           {/* Expanded advanced options */}
-          <div className={`${expanded ? 'max-h-48 mt-2' : 'max-h-0'} overflow-hidden transition-all duration-200`}> 
-            <div className="pl-1 md:pl-2 text-sm text-gray-600 flex flex-col md:flex-row md:items-center gap-3">
+          <div className={`${expanded ? 'max-h-48 mt-4' : 'max-h-0'} overflow-hidden transition-all duration-200`}> 
+            <div className="flex flex-col lg:flex-row lg:items-center gap-4 lg:gap-4">
               <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-500">Priority</span>
+                <span className="text-xs text-gray-500 font-medium">Priority</span>
                 <select
                   value={priority}
                   onChange={(e) => setPriority(e.target.value as Priority)}
-                  className="px-2 py-1 rounded-lg bg-gray-50 text-gray-600 text-sm hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="px-3 py-2 rounded-lg bg-gray-50 text-gray-600 text-base hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 border border-gray-200"
                   title="Priority"
                   aria-label="Priority"
                 >
@@ -200,12 +201,12 @@ const TaskList: React.FC<{ tasks?: Task[]; freezeSort?: boolean; setFreezeSort?:
                 </select>
               </div>
 
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-500">Category</span>
+              <div className="flex items-center gap-2 flex-1">
+                <span className="text-xs text-gray-500 font-medium">Category</span>
                 <select
                   value={showNewCat ? ADD_NEW_SENTINEL : (category || '')}
                   onChange={handleSelectCategory}
-                  className="px-2 py-2 border border-gray-300 rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-300"
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-base bg-white focus:outline-none focus:ring-2 focus:ring-blue-300 flex-1 max-w-xs"
                   title="Category"
                   aria-label="Category"
                 >
@@ -222,7 +223,7 @@ const TaskList: React.FC<{ tasks?: Task[]; freezeSort?: boolean; setFreezeSort?:
                     onChange={(e) => setNewCategoryText(e.target.value)}
                     onKeyDown={onKeyDownNewCategory}
                     placeholder="New category"
-                    className="px-2 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+                    className="px-3 py-2 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-300 flex-1"
                     autoFocus
                   />
                 )}
@@ -232,10 +233,10 @@ const TaskList: React.FC<{ tasks?: Task[]; freezeSort?: boolean; setFreezeSort?:
         </div>
         
         {list.length === 0 ? (
-          <div className="p-8 text-center text-gray-400 italic">
-            <p className="inline-flex items-center gap-2 justify-center">
+          <div className="p-6 lg:p-8 text-center text-gray-400">
+            <p className="inline-flex items-center gap-2 justify-center text-sm lg:text-base">
               {/* Clipboard icon */}
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 lg:w-6 lg:h-6">
                 <rect x="9" y="2" width="6" height="4" rx="1" />
                 <path d="M9 4H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2" />
               </svg>

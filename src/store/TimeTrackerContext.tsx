@@ -1,10 +1,9 @@
-import React, { useReducer, useEffect } from 'react';
+import React, { useReducer, useEffect, useState } from 'react';
 import type { AppState, Task, TimeEntry } from '../types';
-import { saveToStorage, loadFromStorage } from '../utils/storage';
 import { getCurrentTimestamp } from '../utils/time';
 import { generateId } from '../utils/helpers';
 import { TimeTrackerContext } from '../context/TimeTrackerContext';
-import { saveTask, loadTasks } from '../services/firestore';
+import { saveAppState, loadAppState } from '../services/firestore';
 
 const USER_ID = 'test-users';
 
@@ -48,20 +47,25 @@ const timeTrackerReducer = (state: AppState, action: Action): AppState => {
         createdAt: getCurrentTimestamp(),
         order: newOrder,
       };
-      // Fire-and-forget write to Firestore
-      void saveTask(USER_ID, newTask);
-      return {
+      const newState = {
         ...state,
         tasks: [...state.tasks, newTask],
       };
+      // Fire-and-forget write to Firestore
+      void saveAppState(USER_ID, newState);
+      return newState;
     }
 
-    case 'DELETE_TASK':
-      return {
+    case 'DELETE_TASK': {
+      const newState = {
         ...state,
         tasks: state.tasks.filter(task => task.id !== action.payload.taskId),
         activeTaskId: state.activeTaskId === action.payload.taskId ? null : state.activeTaskId,
       };
+      // Fire-and-forget write to Firestore
+      void saveAppState(USER_ID, newState);
+      return newState;
+    }
 
     case 'START_TASK': {
       const updatedTasksStart = state.tasks.map(task => ({
@@ -69,11 +73,14 @@ const timeTrackerReducer = (state: AppState, action: Action): AppState => {
         isActive: task.id === action.payload.taskId,
         startTime: task.id === action.payload.taskId ? getCurrentTimestamp() : task.startTime,
       }));
-      return {
+      const newState = {
         ...state,
         tasks: updatedTasksStart,
         activeTaskId: action.payload.taskId,
       };
+      // Fire-and-forget write to Firestore
+      void saveAppState(USER_ID, newState);
+      return newState;
     }
 
     case 'STOP_TASK': {
@@ -104,16 +111,19 @@ const timeTrackerReducer = (state: AppState, action: Action): AppState => {
           : task
       );
 
-      return {
+      const newState = {
         ...state,
         tasks: updatedTasksStop,
         timeEntries: [...state.timeEntries, newTimeEntry],
         activeTaskId: null,
       };
+      // Fire-and-forget write to Firestore
+      void saveAppState(USER_ID, newState);
+      return newState;
     }
 
-    case 'UPDATE_TASK':
-      return {
+    case 'UPDATE_TASK': {
+      const newState = {
         ...state,
         tasks: state.tasks.map(task =>
           task.id === action.payload.taskId
@@ -121,6 +131,10 @@ const timeTrackerReducer = (state: AppState, action: Action): AppState => {
             : task
         ),
       };
+      // Fire-and-forget write to Firestore
+      void saveAppState(USER_ID, newState);
+      return newState;
+    }
 
     case 'REORDER_TASKS': {
       const idToOrder: Record<string, number> = {};
@@ -133,17 +147,24 @@ const timeTrackerReducer = (state: AppState, action: Action): AppState => {
         .map(t => ({ ...t, order: idToOrder[t.id] }));
       const remaining = state.tasks.filter(t => !(t.id in idToOrder));
       const resultTasks = [...reordered, ...remaining];
-      return {
+      const newState = {
         ...state,
         tasks: resultTasks,
       };
+      // Fire-and-forget write to Firestore
+      void saveAppState(USER_ID, newState);
+      return newState;
     }
 
-    case 'SET_SORT_MODE':
-      return {
+    case 'SET_SORT_MODE': {
+      const newState = {
         ...state,
         sortMode: action.payload.sortMode,
       };
+      // Fire-and-forget write to Firestore
+      void saveAppState(USER_ID, newState);
+      return newState;
+    }
 
     case 'TICK': {
       if (!state.activeTaskId) return state;
@@ -158,10 +179,13 @@ const timeTrackerReducer = (state: AppState, action: Action): AppState => {
           : task
       );
       
-      return {
+      const newState = {
         ...state,
         tasks: tickedTasks,
       };
+      // Fire-and-forget write to Firestore
+      void saveAppState(USER_ID, newState);
+      return newState;
     }
 
     default:
@@ -172,30 +196,45 @@ const timeTrackerReducer = (state: AppState, action: Action): AppState => {
 
 export const TimeTrackerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(timeTrackerReducer, initialState);
+  const [isLoaded, setIsLoaded] = useState(false);
 
-  // Load data from Firestore on mount (fallback to localStorage)
+  // Load data from Firestore on mount
   useEffect(() => {
+    if (isLoaded) return; // Prevent multiple loads
+    
     let mounted = true;
     (async () => {
       try {
-        const tasks = await loadTasks(USER_ID);
+        const appState = await loadAppState(USER_ID);
         if (!mounted) return;
-        const mapped = (tasks as unknown as Task[]) || [];
-        dispatch({ type: 'LOAD_STATE', payload: { ...initialState, tasks: mapped, sortMode: 'custom' } });
-      } catch {
-        const savedState = loadFromStorage();
-        if (savedState && mounted) {
-          dispatch({ type: 'LOAD_STATE', payload: savedState });
+        
+        if (appState) {
+          // Deduplicate tasks by ID to prevent duplicates
+          const uniqueTasks = appState.tasks.reduce((acc, task) => {
+            if (!acc.find(t => t.id === task.id)) {
+              acc.push(task);
+            }
+            return acc;
+          }, [] as Task[]);
+          
+          dispatch({ type: 'LOAD_STATE', payload: { ...appState, tasks: uniqueTasks } });
+        } else {
+          // No data in Firebase, start with empty state
+          dispatch({ type: 'LOAD_STATE', payload: initialState });
+        }
+        setIsLoaded(true);
+      } catch (error) {
+        console.error('Failed to load app state from Firebase:', error);
+        // Start with empty state if Firebase fails
+        if (mounted) {
+          dispatch({ type: 'LOAD_STATE', payload: initialState });
+          setIsLoaded(true);
         }
       }
     })();
     return () => { mounted = false; };
-  }, []);
+  }, [isLoaded]);
 
-  // Save to localStorage whenever state changes
-  useEffect(() => {
-    saveToStorage(state);
-  }, [state]);
 
   // Timer for active task
   useEffect(() => {

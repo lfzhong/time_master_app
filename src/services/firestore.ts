@@ -1,5 +1,6 @@
 import { db } from "../firebase";
-import { collection, addDoc, getDocs } from "firebase/firestore";
+import { doc, setDoc, getDoc } from "firebase/firestore";
+import type { AppState } from "../types";
 
 // Remove undefined fields recursively so Firestore accepts the payload
 function removeUndefinedDeep<T>(value: T): T {
@@ -18,28 +19,34 @@ function removeUndefinedDeep<T>(value: T): T {
   return value;
 }
 
-// Save a task
-export async function saveTask(userId: string, task: any) {
+
+// Save complete app state
+export async function saveAppState(userId: string, state: AppState) {
   try {
-    const cleanTask = removeUndefinedDeep(task);
-    const ref = await addDoc(collection(db, "users", userId, "tasks"), cleanTask);
+    const cleanState = removeUndefinedDeep(state);
+    await setDoc(doc(db, "users", userId, "appState", "main"), cleanState);
     if (typeof window !== 'undefined') {
-      console.log('[Firestore] Saved task', { docId: ref.id, path: `users/${userId}/tasks/${ref.id}` });
+      console.log('[Firestore] Saved app state', { userId });
     }
-    return ref.id;
   } catch (err) {
-    console.error('[Firestore] Failed to save task', err);
+    console.error('[Firestore] Failed to save app state', err);
     throw err;
   }
 }
 
-// Load tasks
-export async function loadTasks(userId: string) {
+// Load complete app state
+export async function loadAppState(userId: string): Promise<AppState | null> {
   try {
-    const snapshot = await getDocs(collection(db, "users", userId, "tasks"));
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const docRef = doc(db, "users", userId, "appState", "main");
+    const docSnap = await getDoc(docRef);
+    
+    if (docSnap.exists()) {
+      return docSnap.data() as AppState;
+    } else {
+      return null;
+    }
   } catch (err) {
-    console.error('[Firestore] Failed to load tasks', err);
+    console.error('[Firestore] Failed to load app state', err);
     throw err;
   }
 }
